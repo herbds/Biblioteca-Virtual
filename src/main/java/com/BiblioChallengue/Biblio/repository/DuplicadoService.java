@@ -8,44 +8,54 @@ import java.util.stream.Collectors;
 
 public interface DuplicadoService extends JpaRepository<ExtraccionAutores, Long> {
 
-
+    // Método para obtener autores nacidos después de una fecha
     default List<ExtraccionAutores> findAutoresByFechaNacimientoAfter(String nacimiento) {
-
         int fechaNacimiento = Integer.parseInt(nacimiento);
 
         return findAll().stream()
                 .filter(autor -> {
-
                     String fechaNacimientoAutor = autor.getFechasNacimiento();
+                    String fechaMuerteAutor = autor.getFechasMuerte(); // Para no considerar autores muertos antes de la fecha
 
                     if (fechaNacimientoAutor != null && !fechaNacimientoAutor.isEmpty()) {
                         int nacimientoAutor = Integer.parseInt(fechaNacimientoAutor);
-                        return nacimientoAutor > fechaNacimiento;
+                        // El autor debe estar vivo o haber nacido después de la fecha indicada
+                        if (fechaMuerteAutor == null || fechaMuerteAutor.isEmpty()) {
+                            return nacimientoAutor > fechaNacimiento; // Autores vivos también se consideran
+                        } else {
+                            int muerteAutor = Integer.parseInt(fechaMuerteAutor);
+                            return nacimientoAutor > fechaNacimiento && muerteAutor >= fechaNacimiento; // Autores muertos después de la fecha también se consideran
+                        }
                     }
                     return false;
                 })
-                .collect(Collectors.toList()); // Recolectar los autores en una lista
+                .collect(Collectors.toList());
     }
-    default List<ExtraccionAutores> findAutoresByFechaMuerteBefore(String muerte) {
 
+    // Método para obtener autores muertos antes de una fecha
+    default List<ExtraccionAutores> findAutoresByFechaMuerteBefore(String muerte) {
         int fechaMuerte = Integer.parseInt(muerte);
 
         return findAll().stream()
                 .filter(autor -> {
-
                     String fechaMuerteAutor = autor.getFechasMuerte();
+                    String fechaNacimientoAutor = autor.getFechasNacimiento(); // Verificamos que haya nacido antes
 
                     if (fechaMuerteAutor != null && !fechaMuerteAutor.isEmpty()) {
                         int muerteAutor = Integer.parseInt(fechaMuerteAutor);
-                        return muerteAutor < fechaMuerte;
+                        if (fechaNacimientoAutor != null && !fechaNacimientoAutor.isEmpty()) {
+                            int nacimientoAutor = Integer.parseInt(fechaNacimientoAutor);
+                            return muerteAutor < fechaMuerte && nacimientoAutor <= fechaMuerte;
+                        }
+                        return muerteAutor < fechaMuerte; // Si no tiene fecha de nacimiento registrada
                     }
                     return false;
                 })
-                .collect(Collectors.toList()); // Recolectar los autores en una lista
+                .collect(Collectors.toList());
     }
 
+    // Método para obtener autores vivos entre dos fechas
     default List<ExtraccionAutores> findAutoresByEntreFechas(String fechaInicio, String fechaFin) {
-
         int fechaInicioInt = Integer.parseInt(fechaInicio);
         int fechaFinInt = Integer.parseInt(fechaFin);
 
@@ -54,16 +64,16 @@ public interface DuplicadoService extends JpaRepository<ExtraccionAutores, Long>
                     String fechaMuerteAutor = autor.getFechasMuerte();
                     String fechaNacimientoAutor = autor.getFechasNacimiento();
 
-                    if (fechaMuerteAutor != null && !fechaMuerteAutor.isEmpty() && fechaNacimientoAutor != null && !fechaNacimientoAutor.isEmpty()) {
+                    if (fechaNacimientoAutor != null && !fechaNacimientoAutor.isEmpty()) {
                         int nacimientoAutor = Integer.parseInt(fechaNacimientoAutor);
-                        int muerteAutor = Integer.parseInt(fechaMuerteAutor);
+                        int muerteAutor = (fechaMuerteAutor != null && !fechaMuerteAutor.isEmpty()) ?
+                                Integer.parseInt(fechaMuerteAutor) : Integer.MAX_VALUE; // Si no tiene fecha de muerte, consideramos que está vivo
 
-                        return (nacimientoAutor <= fechaFinInt && muerteAutor >= fechaInicioInt && muerteAutor <= fechaFinInt);
+                        // Autores nacidos antes de la fechaFin y muertos después de la fechaInicio o vivos durante ese periodo
+                        return (nacimientoAutor <= fechaFinInt && muerteAutor >= fechaInicioInt);
                     }
-
                     return false;
                 })
-                .collect(Collectors.toList()); // Recolectamos los autores que cumplen con la condición
+                .collect(Collectors.toList());
     }
-
 }

@@ -129,9 +129,9 @@ public class Principal {
         Scanner tecladoMenu = new Scanner(System.in);
 
         System.out.println("Selecciona el filtro:");
-        System.out.println("1. Buscar autores nacidos después de un año");
-        System.out.println("2. Buscar autores muertos antes de un año");
-        System.out.println("3. Buscar autores nacidos entre dos fechas");
+        System.out.println("1. Buscar autores nacidos después de una fecha");
+        System.out.println("2. Buscar autores muertos antes de una fecha");
+        System.out.println("3. Buscar autores vivos entre dos fechas");
 
         System.out.print("Introduce una opción: ");
         int opcion = 0;
